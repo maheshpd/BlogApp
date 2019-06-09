@@ -61,8 +61,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onComplete(@NonNull Task<AuthResult> task) {
                 if (task.isSuccessful())
                 {
-                    loginProgress.setVisibility(View.INVISIBLE);
-                    btnLogin.setVisibility(View.VISIBLE);
+
                     updateUI();
                 }else {
                     String message = task.getException().getMessage().toString();
@@ -78,6 +77,8 @@ public class LoginActivity extends AppCompatActivity {
     private void updateUI() {
         HomeActivity = new Intent(this,HomeActivity.class);
         startActivity(HomeActivity);
+        loginProgress.setVisibility(View.INVISIBLE);
+        btnLogin.setVisibility(View.VISIBLE);
         finish();
     }
 
