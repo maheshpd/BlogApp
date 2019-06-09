@@ -68,10 +68,10 @@ public class RegisterActivity extends AppCompatActivity {
                 regBtn.setVisibility(View.INVISIBLE);
                 loadingProgress.setVisibility(View.VISIBLE);
 
-                final String email = userEmail.getText().toString();
-                String password = userPassword.getText().toString();
-                String conPassword = userConfirPassword.getText().toString();
-                String name = userName.getText().toString();
+                final String email = userEmail.getText().toString().trim();
+                String password = userPassword.getText().toString().trim();
+                String conPassword = userConfirPassword.getText().toString().trim();
+                String name = userName.getText().toString().trim();
 
                 if (email.isEmpty() || name.isEmpty() || password.isEmpty() || !conPassword.equals(password)){
                     //something goes wrong: all field must be filled
@@ -195,5 +195,9 @@ public class RegisterActivity extends AppCompatActivity {
             ImgUserPhoto.setImageURI(pickedImgUri);
 
         }
+    }
+
+    public void Login(View view) {
+        startActivity(new Intent(RegisterActivity.this,LoginActivity.class));
     }
 }
