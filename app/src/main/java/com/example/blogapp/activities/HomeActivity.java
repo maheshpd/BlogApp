@@ -4,7 +4,10 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.view.Gravity;
@@ -22,14 +25,22 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.example.blogapp.R;
 import com.example.blogapp.fragment.HomeFragment;
 import com.example.blogapp.fragment.ProfileFragment;
 import com.example.blogapp.fragment.SettingFragment;
+import com.example.blogapp.model.Post;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ServerValue;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -40,10 +51,13 @@ public class HomeActivity extends AppCompatActivity
     FirebaseUser currentUser;
     FirebaseAuth mAuth;
     Dialog popAddPost;
-    ImageView popupPostImage,popupAddBtn;
-    EditText popupTitle,popupDescription;
+    ImageView popupPostImage, popupAddBtn;
+    EditText popupTitle, popupDescription;
     ProgressBar popupClickProgress;
     CircleImageView popupUser;
+
+    public static int REQUESTCODE = 1;
+    private Uri pickedImgUri = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,12 +72,14 @@ public class HomeActivity extends AppCompatActivity
 
         //init popup
         initPopup();
+        setupPopupImageClick();
+
 
         FloatingActionButton fab = findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-              popAddPost.show();
+                popAddPost.show();
             }
         });
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
@@ -75,16 +91,27 @@ public class HomeActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
 
         getSupportActionBar().setTitle("Home");
-        getSupportFragmentManager().beginTransaction().replace(R.id.container,new HomeFragment()).commit();
+        getSupportFragmentManager().beginTransaction().replace(R.id.container, new HomeFragment()).commit();
 
         updateNavHeader();
+    }
+
+    private void setupPopupImageClick() {
+        popupPostImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent galleryImage = new Intent(Intent.ACTION_GET_CONTENT);
+                galleryImage.setType("image/*");
+                startActivityForResult(galleryImage, REQUESTCODE);
+            }
+        });
     }
 
     private void initPopup() {
         popAddPost = new Dialog(this);
         popAddPost.setContentView(R.layout.popup_add_post);
         popAddPost.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        popAddPost.getWindow().setLayout(Toolbar.LayoutParams.MATCH_PARENT,Toolbar.LayoutParams.WRAP_CONTENT);
+        popAddPost.getWindow().setLayout(Toolbar.LayoutParams.MATCH_PARENT, Toolbar.LayoutParams.WRAP_CONTENT);
         popAddPost.getWindow().getAttributes().gravity = Gravity.TOP;
 
         //init popup widgets
@@ -104,8 +131,54 @@ public class HomeActivity extends AppCompatActivity
             public void onClick(View v) {
                 popupAddBtn.setVisibility(View.INVISIBLE);
                 popupClickProgress.setVisibility(View.VISIBLE);
+
+                //we need to test all input fields (Title and description) and post image
+                if (!popupTitle.getText().toString().isEmpty()
+                        && !popupDescription.getText().toString().isEmpty()
+                        && pickedImgUri != null) {
+
+                    StorageReference storageReference = FirebaseStorage.getInstance().getReference().child("blog_images");
+                    final StorageReference imageFilePath = storageReference.child(pickedImgUri.getLastPathSegment());
+                    imageFilePath.putFile(pickedImgUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            imageFilePath.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    String image_link = uri.toString();
+                                    Post post = new Post(popupTitle.getText().toString().trim(),
+                                            popupDescription.getText().toString().trim(),
+                                            image_link,
+                                            currentUser.getUid(),
+                                            currentUser.getPhotoUrl().toString());
+
+                                    //Add post to Firebase database
+                                    addPost(post);
+                                }
+                            }).addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    String message = e.getMessage();
+                                    showMessage(message);
+                                    popupClickProgress.setVisibility(View.INVISIBLE);
+                                    popupAddBtn.setVisibility(View.VISIBLE);
+                                }
+                            });
+                        }
+                    });
+
+
+                } else {
+                    showMessage("Please verify all input field and choose Post Image");
+                    popupAddBtn.setVisibility(View.VISIBLE);
+                    popupClickProgress.setVisibility(View.INVISIBLE);
+                }
             }
         });
+    }
+
+    private void showMessage(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -148,16 +221,16 @@ public class HomeActivity extends AppCompatActivity
 
         if (id == R.id.nav_home) {
             getSupportActionBar().setTitle("Home");
-         getSupportFragmentManager().beginTransaction().replace(R.id.container,new HomeFragment()).commit();
+            getSupportFragmentManager().beginTransaction().replace(R.id.container, new HomeFragment()).commit();
         } else if (id == R.id.profile) {
             getSupportActionBar().setTitle("Profile");
-            getSupportFragmentManager().beginTransaction().replace(R.id.container,new ProfileFragment()).commit();
+            getSupportFragmentManager().beginTransaction().replace(R.id.container, new ProfileFragment()).commit();
         } else if (id == R.id.settings) {
             getSupportActionBar().setTitle("Settings");
-            getSupportFragmentManager().beginTransaction().replace(R.id.container,new SettingFragment()).commit();
+            getSupportFragmentManager().beginTransaction().replace(R.id.container, new SettingFragment()).commit();
         } else if (id == R.id.nav_singout) {
             mAuth.signOut();
-            startActivity(new Intent(HomeActivity.this,LoginActivity.class));
+            startActivity(new Intent(HomeActivity.this, LoginActivity.class));
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
@@ -175,5 +248,15 @@ public class HomeActivity extends AppCompatActivity
         navUsername.setText(currentUser.getDisplayName());
 
         Glide.with(this).load(currentUser.getPhotoUrl()).into(navUserPhoto);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == RESULT_OK && requestCode == REQUESTCODE && data != null) {
+            pickedImgUri = data.getData();
+            popupPostImage.setImageURI(pickedImgUri);
+        }
     }
 }
