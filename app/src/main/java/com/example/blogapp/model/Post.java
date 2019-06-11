@@ -3,6 +3,8 @@ package com.example.blogapp.model;
 import com.google.firebase.database.ServerValue;
 
 public class Post {
+
+    private String postKey;
     private String title;
     private String description;
     private String picture;
@@ -20,6 +22,14 @@ public class Post {
     }
 
     public Post() {
+    }
+
+    public String getPostKey() {
+        return postKey;
+    }
+
+    public void setPostKey(String postKey) {
+        this.postKey = postKey;
     }
 
     public String getTitle() {

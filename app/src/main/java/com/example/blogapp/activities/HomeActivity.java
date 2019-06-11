@@ -37,6 +37,8 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ServerValue;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
@@ -173,6 +175,26 @@ public class HomeActivity extends AppCompatActivity
                     popupAddBtn.setVisibility(View.VISIBLE);
                     popupClickProgress.setVisibility(View.INVISIBLE);
                 }
+            }
+        });
+    }
+
+    private void addPost(Post post) {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("Posts").push();
+
+        //get post unique ID and update post key
+        String key = myRef.getKey();
+        post.setPostKey(key);
+
+        //add post data to firebase database
+        myRef.setValue(post).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void aVoid) {
+                showMessage("Post added successfully");
+                popupClickProgress.setVisibility(View.INVISIBLE);
+                popupAddBtn.setVisibility(View.VISIBLE);
+                popAddPost.dismiss();
             }
         });
     }

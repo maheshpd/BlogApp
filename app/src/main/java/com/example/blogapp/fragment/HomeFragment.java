@@ -3,21 +3,27 @@ package com.example.blogapp.fragment;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import com.example.blogapp.R;
+import com.example.blogapp.adapter.PostAdapter;
+import com.example.blogapp.model.Post;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link HomeFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link HomeFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import java.util.ArrayList;
+import java.util.List;
+
 public class HomeFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -28,20 +34,17 @@ public class HomeFragment extends Fragment {
     private String mParam1;
     private String mParam2;
 
+    RecyclerView postRecyclerView;
+    PostAdapter postAdapter;
+    FirebaseDatabase firebaseDatabase;
+    DatabaseReference databaseReference;
+    List<Post> postList;
     private OnFragmentInteractionListener mListener;
-
+    ProgressBar progressBar;
     public HomeFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment HomeFragment.
-     */
     // TODO: Rename and change types and number of parameters
     public static HomeFragment newInstance(String param1, String param2) {
         HomeFragment fragment = new HomeFragment();
@@ -64,8 +67,15 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_home, container, false);
+        View fragment = inflater.inflate(R.layout.fragment_home, container, false);
+        postRecyclerView = fragment.findViewById(R.id.post_recycler);
+        progressBar = fragment.findViewById(R.id.post_progressBar);
+        progressBar.setVisibility(View.VISIBLE);
+        postRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        postRecyclerView.setHasFixedSize(true);
+        firebaseDatabase = FirebaseDatabase.getInstance();
+        databaseReference = firebaseDatabase.getReference("Posts");
+        return fragment;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -73,6 +83,32 @@ public class HomeFragment extends Fragment {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
         }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        //get List Posts from the database
+        databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                postList = new ArrayList<>();
+                for (DataSnapshot postsnp: dataSnapshot.getChildren()) {
+                    Post post = postsnp.getValue(Post.class);
+                    postList.add(post);
+                    progressBar.setVisibility(View.INVISIBLE);
+                }
+
+                postAdapter = new PostAdapter(getActivity(),postList);
+                postAdapter.notifyDataSetChanged();
+                postRecyclerView.setAdapter(postAdapter);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
     }
 
     @Override
@@ -86,16 +122,6 @@ public class HomeFragment extends Fragment {
         mListener = null;
     }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
