@@ -3,6 +3,9 @@ package com.example.blogapp.activities;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.view.View;
 import android.view.Window;
@@ -15,16 +18,22 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.example.blogapp.R;
+import com.example.blogapp.adapter.CommentAdapter;
 import com.example.blogapp.model.Comment;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -37,7 +46,9 @@ public class PostDetailActivity extends AppCompatActivity {
     EditText editTextComment;
     Button addComment;
     String postKey;
-
+    RecyclerView RvComment;
+    CommentAdapter commentAdapter;
+    List<Comment> listComment;
 
     FirebaseAuth mAuth;
     FirebaseUser currentUser;
@@ -54,6 +65,7 @@ public class PostDetailActivity extends AppCompatActivity {
         getSupportActionBar().hide();
 
         //ini Views
+        RvComment = findViewById(R.id.rv_comment);
         imgPost = findViewById(R.id.post_detail_img);
         imgCurrentUser = findViewById(R.id.post_detail_current_user_img);
         postUserImg = findViewById(R.id.post_detail_user_img);
@@ -61,6 +73,7 @@ public class PostDetailActivity extends AppCompatActivity {
         txtPostDateName = findViewById(R.id.post_detail_date_name);
         txtPostTitle = findViewById(R.id.post_detail_title);
         addComment = findViewById(R.id.post_detail_add_comment_btn);
+        editTextComment = findViewById(R.id.post_detail_comment);
 
         mAuth = FirebaseAuth.getInstance();
         currentUser = mAuth.getCurrentUser();
@@ -70,26 +83,32 @@ public class PostDetailActivity extends AppCompatActivity {
         addComment.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                DatabaseReference commentReference = firebaseDatabase.getReference("Comment").child(postKey)
-                        .push();
-                String comment_content= editTextComment.getText().toString().trim();
+                String comment_content = editTextComment.getText().toString().trim();
                 String uid = currentUser.getUid();
                 String uname = currentUser.getDisplayName();
                 String uimg = currentUser.getPhotoUrl().toString();
-                Comment comment = new Comment(comment_content,uid,uimg,uname);
-                commentReference.setValue(comment).addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        showMessage("comment added");
-                        editTextComment.setText("");
-                    }
-                }).addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        String message = e.getMessage();
-                        showMessage(message);
-                    }
-                });
+                if (TextUtils.isEmpty(comment_content)) {
+                    Toast.makeText(PostDetailActivity.this, "Write some comment!", Toast.LENGTH_SHORT).show();
+                } else {
+
+                    DatabaseReference commentReference = firebaseDatabase.getReference("Comment").child(postKey)
+                            .push();
+
+                    Comment comment = new Comment(comment_content, uid, uimg, uname);
+                    commentReference.setValue(comment).addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            showMessage("comment added");
+                            editTextComment.setText("");
+                        }
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            String message = e.getMessage();
+                            showMessage(message);
+                        }
+                    });
+                }
             }
         });
 
@@ -114,6 +133,31 @@ public class PostDetailActivity extends AppCompatActivity {
 
         String postDate = timestampToString(getIntent().getExtras().getLong("postDate"));
         txtPostDateName.setText(postDate);
+
+        initRvComment();
+    }
+
+    private void initRvComment() {
+        RvComment.setLayoutManager(new LinearLayoutManager(this));
+        DatabaseReference commentRef = firebaseDatabase.getReference("Comment").child(postKey);
+        commentRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                listComment = new ArrayList<>();
+                for (DataSnapshot snap : dataSnapshot.getChildren()) {
+                    Comment comment = snap.getValue(Comment.class);
+                    listComment.add(comment);
+                }
+
+                commentAdapter = new CommentAdapter(getApplicationContext(), listComment);
+                RvComment.setAdapter(commentAdapter);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        });
     }
 
     private void showMessage(String message) {
