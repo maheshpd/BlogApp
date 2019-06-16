@@ -17,8 +17,8 @@ import com.example.blogapp.adapter.PostAdapter;
 import com.example.blogapp.model.Post;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ public class HomeFragment extends Fragment {
     RecyclerView postRecyclerView;
     PostAdapter postAdapter;
     FirebaseDatabase firebaseDatabase;
-    DatabaseReference databaseReference;
+    Query databaseReference;
     List<Post> postList;
     private OnFragmentInteractionListener mListener;
     ProgressBar progressBar;
@@ -74,7 +74,7 @@ public class HomeFragment extends Fragment {
         postRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         postRecyclerView.setHasFixedSize(true);
         firebaseDatabase = FirebaseDatabase.getInstance();
-        databaseReference = firebaseDatabase.getReference("Posts");
+        databaseReference = firebaseDatabase.getReference("Posts").orderByChild("timeStamp");
         return fragment;
     }
 
@@ -96,6 +96,7 @@ public class HomeFragment extends Fragment {
                 for (DataSnapshot postsnp: dataSnapshot.getChildren()) {
                     Post post = postsnp.getValue(Post.class);
                     postList.add(post);
+
                     progressBar.setVisibility(View.INVISIBLE);
                 }
 
