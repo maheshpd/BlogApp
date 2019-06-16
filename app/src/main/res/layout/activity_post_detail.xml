@@ -57,10 +57,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
             android:text="TextView"
             android:textSize="12sp"
-            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/view"
             tools:text="16 June 2019 | by Mahesh Prasad" />
@@ -80,34 +78,33 @@
             app:layout_constraintTop_toBottomOf="@+id/post_detail_date_name" />
 
         <de.hdodenhof.circleimageview.CircleImageView
-            android:id="@+id/post_detail_user_img"
+            android:id="@+id/post_detail_current_user_img"
             android:layout_width="35dp"
             android:layout_height="35dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="16dp"
-            android:layout_marginEnd="8dp"
             android:layout_marginBottom="8dp"
             android:src="@drawable/userphoto"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/post_detail_comment"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/post_detail_desc" />
 
         <EditText
             android:id="@+id/post_detail_comment"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="46dp"
             android:layout_marginStart="8dp"
             android:layout_marginEnd="8dp"
-            android:layout_marginBottom="8dp"
             android:background="@drawable/edittext_button_style_rounded"
             android:ems="10"
             android:hint="Write Comment"
             android:inputType="textPersonName"
-            app:layout_constraintBottom_toBottomOf="@id/post_detail_user_img"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/post_detail_add_comment_btn"
-            app:layout_constraintStart_toEndOf="@id/post_detail_user_img"
-            app:layout_constraintTop_toTopOf="@id/post_detail_user_img" />
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toEndOf="@+id/post_detail_current_user_img"
+            app:layout_constraintTop_toTopOf="@+id/post_detail_current_user_img"
+            app:layout_constraintVertical_bias="0.0" />
 
         <Button
             android:id="@+id/post_detail_add_comment_btn"
@@ -120,5 +117,15 @@
             app:layout_constraintBottom_toBottomOf="@+id/post_detail_comment"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@+id/post_detail_comment" />
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:id="@+id/post_detail_user_img"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="8dp"
+            app:layout_constraintBottom_toBottomOf="@+id/post_detail_date_name"
+            app:layout_constraintStart_toEndOf="@+id/post_detail_date_name"
+            app:layout_constraintTop_toTopOf="@+id/post_detail_date_name"
+            android:src="@drawable/userphoto" />
     </android.support.constraint.ConstraintLayout>
 </android.support.v4.widget.NestedScrollView>
